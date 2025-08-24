@@ -12,10 +12,8 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "美颜分析",
   },
-  manifest: "/manifest.json",
   icons: {
-    icon: "/icon-192x192.png",
-    apple: "/icon-192x192.png",
+    icon: "/favicon.ico",
   },
 };
 
