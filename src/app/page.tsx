@@ -1,103 +1,151 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from 'react';
+import { Upload, Palette, User, Sparkles } from 'lucide-react';
+import FaceAnalyzer from '@/components/FaceAnalyzer';
+import StyleResults from '@/components/StyleResults';
+
+interface AnalysisResult {
+  faceShape: string;
+  skinTone: string;
+  skinUndertone: string;
+  confidence: number;
+  recommendations: {
+    colors: string[];
+    patterns: string[];
+    necklines: string[];
+    hairColors: string[];
+    bangs: string[];
+    accessories: string[];
+    makeupTips: string[];
+  };
+}
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [currentStep, setCurrentStep] = useState<'upload' | 'analyze' | 'results'>('upload');
+  const [analysisResult, setAnalysisResult] = useState(null);
+  const [originalImage, setOriginalImage] = useState<string | null>(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  return (
+    <div className="min-h-screen">
+      {/* Header */}
+      <header className="text-center mb-12">
+        <div className="flex items-center justify-center gap-3 mb-4">
+          <Sparkles className="text-pink-500" size={32} />
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+            美颜风格分析
+          </h1>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+        <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+          AI智能分析你的肤色与脸型，为你推荐最适合的穿搭风格、发色和造型
+        </p>
+      </header>
+
+      {/* Progress Steps */}
+      <div className="flex justify-center mb-8 px-4">
+        <div className="flex items-center space-x-2 sm:space-x-4 overflow-x-auto w-full max-w-lg">
+          {[
+            { id: 'upload', label: '上传照片', icon: Upload },
+            { id: 'analyze', label: '智能分析', icon: User },
+            { id: 'results', label: '风格推荐', icon: Palette },
+          ].map((step, index) => {
+            const Icon = step.icon;
+            const isActive = currentStep === step.id;
+            const isCompleted = ['upload', 'analyze'].indexOf(step.id) < ['upload', 'analyze'].indexOf(currentStep);
+            
+            return (
+              <div key={step.id} className="flex items-center flex-shrink-0">
+                <div className={`
+                  flex items-center justify-center w-8 h-8 sm:w-12 sm:h-12 rounded-full border-2 
+                  ${isActive ? 'bg-pink-500 border-pink-500 text-white' : 
+                    isCompleted ? 'bg-green-500 border-green-500 text-white' : 
+                    'border-gray-300 text-gray-400'}
+                `}>
+                  <Icon size={16} className="sm:w-5 sm:h-5" />
+                </div>
+                <span className={`ml-2 text-xs sm:text-sm font-medium ${
+                  isActive ? 'text-pink-600' : 
+                  isCompleted ? 'text-green-600' : 'text-gray-400'
+                } hidden sm:block`}>
+                  {step.label}
+                </span>
+                {index < 2 && (
+                  <div className={`w-8 sm:w-20 h-0.5 mx-2 sm:mx-4 ${
+                    isCompleted ? 'bg-green-500' : 'bg-gray-300'
+                  }`} />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl p-4 sm:p-8">
+        {currentStep === 'upload' && (
+          <div className="text-center">
+            <h2 className="text-2xl font-semibold mb-6 text-gray-800">
+              开始你的风格分析之旅
+            </h2>
+            <FaceAnalyzer 
+              onAnalysisComplete={(result, imageData) => {
+                setAnalysisResult(result);
+                setOriginalImage(imageData);
+                setCurrentStep('results');
+              }}
+            />
+          </div>
+        )}
+
+        {currentStep === 'analyze' && (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-pink-500 mx-auto mb-4"></div>
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">AI正在分析中...</h3>
+            <p className="text-gray-500">请稍候，我们正在为你量身定制风格建议</p>
+          </div>
+        )}
+
+        {currentStep === 'results' && analysisResult && (
+          <StyleResults 
+            result={{
+              ...(analysisResult as AnalysisResult),
+              originalImage: originalImage || undefined
+            }}
+            onRestart={() => {
+              setCurrentStep('upload');
+              setAnalysisResult(null);
+              setOriginalImage(null);
+            }}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        )}
+      </div>
+
+      {/* Features */}
+      <div className="mt-12 sm:mt-16 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-8">
+        {[
+          {
+            icon: <User className="text-pink-500" size={24} />,
+            title: "精准脸型分析",
+            desc: "AI识别椭圆、圆形、方形等8种脸型"
+          },
+          {
+            icon: <Palette className="text-purple-500" size={24} />,
+            title: "专业肤色诊断", 
+            desc: "四季色彩理论，匹配最佳色系"
+          },
+          {
+            icon: <Sparkles className="text-pink-500" size={24} />,
+            title: "个性化建议",
+            desc: "衣领、发色、刘海一站式推荐"
+          }
+        ].map((feature, index) => (
+          <div key={index} className="bg-white rounded-xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition-shadow">
+            <div className="mb-4">{feature.icon}</div>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-2">{feature.title}</h3>
+            <p className="text-sm sm:text-base text-gray-600">{feature.desc}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
